@@ -23,3 +23,11 @@ RewriteEngine On
 RewriteCond %{SCRIPT_FILENAME} !-f
 RewriteCond %{SCRIPT_FILENAME} !-d
 RewriteRule .* index.php [L]
+
+# gzip directives
+<IfModule mod_deflate.c>
+	<IfModule mod_filter.c>
+		SetOutputFilter DEFLATE
+		SetEnvIfNoCase Request_URI "\.(?:gif|jpe?g|png)$" no-gzip
+	</IfModule>
+</IfModule>

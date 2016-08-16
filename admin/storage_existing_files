@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?
 //
 // Populate a Redis table with the keys of all existing storage files

@@ -147,7 +147,7 @@ class SyncController extends Controller {
 		
 		$authData = array('username' => $username, 'password' => $password);
 		
-		$userID = Zotero_Users::authenticate('password', $authData);
+		$userID = Zotero_ExternalUsers::authenticate($authData);
 		if (!$userID) {
 			StatsD::increment("sync.login.failure");
 			if (isset($_SERVER['HTTP_X_ZOTERO_VERSION']) && $_SERVER['HTTP_X_ZOTERO_VERSION'] == "2.0b6") {

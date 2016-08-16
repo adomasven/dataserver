@@ -35,18 +35,7 @@ function zotero_autoload($className) {
 	if (strpos($className, 'Zotero_') === 0) {
 		$fileName = str_replace('Zotero_', '', $className) . '.inc.php';
 		
-		if (strpos($fileName, 'AuthenticationPlugin_') === 0) {
-			$fileName = str_replace('AuthenticationPlugin_', '', $fileName);
-			$auth = true;
-		}
-		else {
-			$auth = false;
-		}
-		
 		$path = Z_ENV_BASE_PATH . 'model/';
-		if ($auth) {
-			$path .= 'auth/';
-		}
 		$path .= $fileName;
 		require_once $path;
 		return;
@@ -249,7 +238,7 @@ Z_Core::$Elastica = new \Elastica\Client(array(
 	}, Z_CONFIG::$SEARCH_HOSTS)
 ));
 
-require('interfaces/IAuthenticationPlugin.inc.php');
+require('interfaces/IExternalUsers.inc.php');
 
 require('log.inc.php');
 Z_Core::$debug = !empty(Z_CONFIG::$DEBUG_LOG);

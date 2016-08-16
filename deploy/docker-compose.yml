@@ -1,0 +1,60 @@
+version: '2'
+services:
+  db-master:
+    build:
+      context: .
+      dockerfile: Dockerfile-db-master
+    volumes:
+      - "/var/lib/mysql/zotero-master:/var/lib/mysql"
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_pw
+      
+  db-shard:
+    build:
+      context: .
+      dockerfile: Dockerfile-db-shard
+    volumes:
+      - "/var/lib/mysql/zotero-shard:/var/lib/mysql"
+    restart: always
+    environment:
+      - "MYSQL_ROOT_PASSWORD=root_pw"
+      
+      
+  elasticsearch:
+    image: elasticsearch:2.3
+    volumes:
+      - "/usr/share/elasticsearch/data/zotero:/usr/share/elasticsearch/data"
+    restart: always
+    
+    
+  translation-server:
+    image: adomasven/zotero-translation-server
+    
+  citation-server:
+    image: adomasven/citeproc-node
+      
+      
+  memcached:
+    image: memcached:1.4
+    restart: always
+
+  dataserver:
+    depends_on:
+      - db-master
+      - db-shard
+      - elasticsearch
+      - translation-server
+      - citation-server
+    build:
+      context: ../.
+      dockerfile: deploy/Dockerfile-dataserver
+    links:
+      - db-master
+      - db-shard
+      - elasticsearch
+      - translation-server
+      - citation-server
+    ports:
+      - "8000:80"
+    restart: always

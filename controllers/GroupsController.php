@@ -42,18 +42,11 @@ class GroupsController extends ApiController {
 				$this->e400("POST requests cannot end with a groupID (did you mean PUT?)");
 			}
 			
-			try {
-				$group = @new SimpleXMLElement($this->body);
-			}
-			catch (Exception $e) {
-				$this->e400("$this->method data is not valid XML");
-			}
-			
-			if ((int) $group['id']) {
+			$fields = $this->getFieldsFromBody($this->body);
+
+			if (isset($fields['id']) && (int) $fields['id']) {
 				$this->e400("POST requests cannot contain a groupID in '" . $this->body . "'");
 			}
-			
-			$fields = $this->getFieldsFromGroupXML($group);
 			
 			Zotero_DB::beginTransaction();
 			
@@ -101,14 +94,7 @@ class GroupsController extends ApiController {
 				$this->e400("PUT requests must end with a groupID (did you mean POST?)");
 			}
 			
-			try {
-				$group = @new SimpleXMLElement($this->body);
-			}
-			catch (Exception $e) {
-				$this->e400("$this->method data is not valid XML");
-			}
-			
-			$fields = $this->getFieldsFromGroupXML($group);
+			$fields = $this->getFieldsFromBody($this->body);
 			
 			// Group id is optional, but, if it's there, make sure it matches
 			$id = (string) $group['id'];
@@ -522,6 +508,7 @@ class GroupsController extends ApiController {
 	
 	protected function getFieldsFromGroupXML(SimpleXMLElement $group) {
 		$fields = array();
+		$fields['id'] = (int) $group['id'];
 		$fields['ownerUserID'] = (int) $group['owner'];
 		$fields['name'] = (string) $group['name'];
 		$fields['type'] = (string) $group['type'];
@@ -533,5 +520,20 @@ class GroupsController extends ApiController {
 		$fields['hasImage'] = (bool) (int) $group['hasImage'];
 		
 		return $fields;
+	}
+	
+	protected function getFieldsFromBody($body) {
+		try {
+			$group = @new SimpleXMLElement($body);
+			return $this->getFieldsFromGroupXML($group);	
+		}
+		catch (Exception $e) {
+			$group = json_decode($body, true);
+			if ($group !== NULL) {
+				return $group;
+			}
+			$this->e400("$this->method data is not valid XML or JSON");
+		}
+		
 	}
 }

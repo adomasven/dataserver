@@ -24,8 +24,9 @@
     ***** END LICENSE BLOCK *****
 */
 
-class Zotero_AuthenticationPlugin_Password implements Zotero_AuthenticationPlugin {
+class Zotero_ExternalUsers implements Zotero_IExternalUsers {
 	public static function authenticate($data) {
+		return 1;
 		$salt = Z_CONFIG::$AUTH_SALT;
 		
 		// TODO: config

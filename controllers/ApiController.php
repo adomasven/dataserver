@@ -178,10 +178,7 @@ class ApiController extends Controller {
 			
 			// Allow HTTP Auth for file access
 			else if (!empty($extra['allowHTTP']) || !empty($extra['auth'])) {
-				$userID = Zotero_Users::authenticate(
-					'password',
-					array('username' => $username, 'password' => $password)
-				);
+				$userID = Zotero_ExternalUsers::authenticate(array('username' => $username, 'password' => $password));
 				if (!$userID) {
 					$this->e401('Invalid login');
 				}
@@ -243,12 +240,12 @@ class ApiController extends Controller {
 					}
 				}
 			}
-			// Website cookie authentication
+			// zotero.org website cookie authentication
 			//
 			// For CSRF protection, session cookie has to be passed in the 'session' parameter,
 			// which JS code on other sites can't do because it can't access the website cookie.
-			else if (!empty($_GET['session']) &&
-					($this->userID = Zotero_Users::getUserIDFromSessionID($_GET['session']))) {
+			else if (!Z_CONFIG::$CUSTOM_SETUP && !empty($_GET['session']) &&
+					($this->userID = Zotero_ExternalUsers::getUserIDFromSessionID($_GET['session']))) {
 				// Users who haven't synced may not exist in our DB
 				if (!Zotero_Users::exists($this->userID)) {
 					Zotero_Users::add($this->userID);
@@ -265,7 +262,7 @@ class ApiController extends Controller {
 				// Explicit auth request or not a GET request
 				//
 				// /users/<id>/keys is an exception, since the key is embedded in the URL
-				if ($this->method != "GET" && $this->action != 'keys') {
+				if ($this->method != "GET" && empty($extra['no-auth'])) {
 					$this->e403('An API key is required for write requests.');
 				}
 				
@@ -288,6 +285,9 @@ class ApiController extends Controller {
 			}
 			catch (Exception $e) {
 				if ($e->getCode() == Z_ERROR_USER_NOT_FOUND) {
+					if (Z_CONFIG::$CUSTOM_SETUP) {
+						$this->e404("User $this->objectUserID not found");	
+					}
 					try {
 						Zotero_Users::addFromWWW($this->objectUserID);
 					}
@@ -837,6 +837,7 @@ class ApiController extends Controller {
 		
 		// Grant user permissions on own library and all groups
 		$this->permissions->setPermission($libraryID, 'library', true);
+		// 2016-08-08 N.B. Possibly broken "files" is not a valid enum value for `keyPermissions` table
 		$this->permissions->setPermission($libraryID, 'files', true);
 		$this->permissions->setPermission($libraryID, 'notes', true);
 		$this->permissions->setPermission($libraryID, 'write', true);

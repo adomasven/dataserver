@@ -194,6 +194,8 @@ class Zotero_Permissions {
 	}
 	
 	
+	// DOCKERIZATION: prepare for dockerization
+	// This really should be managed within the dataserver schema
 	private function getUserPrivacy($userID) {
 		if (isset($this->userPrivacy[$userID])) {
 			return $this->userPrivacy[$userID];

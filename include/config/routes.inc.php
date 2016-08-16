@@ -76,8 +76,8 @@ else {
 	$router->map('/groups/i:objectGroupID/:scopeObject/:scopeObjectKey/items/:objectKey/:subset', array('controller' => 'Items'));
 	
 	// User API keys
-	$router->map('/keys/:objectName', array('controller' => 'Keys'));
-	$router->map('/users/i:objectUserID/keys/:objectName', array('controller' => 'Keys'));
+	$router->map('/keys/:objectName', array('controller' => 'Keys', 'extra' => ['no-auth' => true]));
+	$router->map('/users/i:objectUserID/keys/:objectName', array('controller' => 'Keys', 'extra' => ['no-auth' => true]));
 	
 	// User/library settings
 	$router->map('/users/i:objectUserID/publications/settings/:objectKey', ['controller' => 'settings', 'extra' => ['publications' => true]]);
@@ -88,6 +88,8 @@ else {
 	$router->map('/users/i:objectUserID/clear', array('controller' => 'Api', 'action' => 'clear'));
 	$router->map('/users/i:objectUserID/publications/clear', ['controller' => 'Api', 'action' => 'clear', 'extra' => ['publications' => true]]);
 	$router->map('/groups/i:objectGroupID/clear', array('controller' => 'Api', 'action' => 'clear'));
+
+	$router->map('/users', ['controller' => 'users', 'extra' => ['no-auth' => true]]);
 	
 	// Other top-level URLs, with an optional key and subset
 	$router->map('/users/i:objectUserID/publications/items/:objectKey/:subset', ['controller' => 'Items', 'extra' => ['publications' => true]]); // Just items for now

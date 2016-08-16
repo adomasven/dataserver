@@ -423,7 +423,7 @@ class ItemsController extends ApiController {
 								$this->permissions,
 								$token
 							);
-							
+
 							if ($this->apiVersion == 1) {
 								Zotero_DB::commit();
 							}

@@ -1,0 +1,6 @@
+FROM mysql:5.6
+
+# Copy config and init files
+COPY config/db-master/my.cnf /etc/mysql/conf.d/
+COPY config/db-master/*.sql /docker-entrypoint-initdb.d/
+COPY config/db-master/*.sh /docker-entrypoint-initdb.d/

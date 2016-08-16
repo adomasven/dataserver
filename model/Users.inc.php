@@ -134,23 +134,6 @@ class Zotero_Users {
 	}
 	
 	
-	public static function getUserIDFromSessionID($sessionID) {
-		$sql = "SELECT userID FROM sessions WHERE id=?
-				AND UNIX_TIMESTAMP() < modified + lifetime";
-		try {
-			$userID = Zotero_WWW_DB_2::valueQuery($sql, $sessionID);
-			Zotero_WWW_DB_2::close();
-		}
-		catch (Exception $e) {
-			Z_Core::logError("WARNING: $e -- retrying on primary");
-			$userID = Zotero_WWW_DB_1::valueQuery($sql, $sessionID);
-			Zotero_WWW_DB_1::close();
-		}
-		
-		return $userID;
-	}
-	
-	
 	public static function getUsername($userID, $skipAutoAdd=false) {
 		if (!empty(self::$usernamesByID[$userID])) {
 			return self::$usernamesByID[$userID];
@@ -186,6 +169,8 @@ class Zotero_Users {
 	}
 	
 	
+	// DOCKERIZATION: prepare for dockerization
+	// probably by not showing real name
 	public static function getRealName($userID) {
 		if (!empty(self::$realNamesByID[$userID])) {
 			return self::$realNamesByID[$userID];
@@ -244,26 +229,32 @@ class Zotero_Users {
 	}
 	
 	
-	public static function exists($userID) {
-		if (Z_Core::$MC->get('userExists_' . $userID)) {
+	public static function exists($userIDOrUsername) {
+		if (Z_Core::$MC->get('userExists_' . $userIDOrUsername)) {
 			return true;
 		}
-		$sql = "SELECT COUNT(*) FROM users WHERE userID=?";
-		$exists = Zotero_DB::valueQuery($sql, $userID);
+		if (is_numeric($userIDOrUsername)) {
+			$sql = "SELECT COUNT(*) FROM users WHERE userID=?";
+		} else {
+			$sql = "SELECT COUNT(*) FROM users WHERE username=?";
+		}
+		$exists = Zotero_DB::valueQuery($sql, $userIDOrUsername);
 		if ($exists) {
-			Z_Core::$MC->set('userExists_' . $userID, 1, 86400);
+			Z_Core::$MC->set('userExists_' . $userIDOrUsername, 1, 86400);
 			return true;
 		}
 		return false;
 	}
 	
 	
-	public static function authenticate($method, $authData) {
-		return call_user_func(array('Zotero_AuthenticationPlugin_' . ucwords($method), 'authenticate'), $authData);
-	}
-	
-	
 	public static function add($userID, $username='') {
+		if (self::exists($userID)) {
+			throw new Exception("User $userID already exists", Z_ERROR_RESOURCE_EXISTS);
+		} 
+		// DOCKERIZATION: add a unique index on username along with proper migrations for dataserver schemas
+		elseif (self::exists($username)) {
+			throw new Exception("User '$username' already exists", Z_ERROR_RESOURCE_EXISTS);
+		}
 		Zotero_DB::beginTransaction();
 		
 		$shardID = Zotero_Shards::getNextShard();
@@ -280,7 +271,7 @@ class Zotero_Users {
 	
 	public static function addFromWWW($userID) {
 		if (self::exists($userID)) {
-			throw new Exception("User $userID already exists");
+			throw new Exception("User $userID already exists", Z_ERROR_RESOURCE_EXISTS);
 		}
 		// Throws an error if user not found
 		$username = self::getUsernameFromWWW($userID);
@@ -442,8 +433,17 @@ class Zotero_Users {
 		
 		return $newUserIDs;
 	}
-	
-	
+
+
+	/**
+	 * Returns an array of valid (not banned) user ids from the given array
+	 * 
+	 * DOCKERIZATION: prepare for dockerization
+	 * unsure how, maybe just disable banning users on custom deploys
+	 * 
+	 * @param array $userIDs array of user ids to check
+	 * @return array of valid user ids
+	 */
 	public static function getValidUsersDB($userIDs) {
 		if (!$userIDs) {
 			return array();
@@ -512,22 +512,23 @@ class Zotero_Users {
 		
 		$username = Zotero_Users::getUsername($userID, true);
 		
-		$sql = "SELECT LUM_Role.Name FROM LUM_User JOIN LUM_Role USING (RoleID) WHERE UserID=?";
-		try {
-			$role = Zotero_WWW_DB_2::valueQuery($sql, $userID);
-		}
-		catch (Exception $e) {
-			Z_Core::logError("WARNING: $e -- retrying on primary");
-			$role = Zotero_WWW_DB_1::valueQuery($sql, $userID);
-		}
-		if ($role != 'Deleted') {
-			throw new Exception("User '$username' does not have role 'Deleted'");
+		// Prevent data deletion if www user not marked 'Deleted'
+		if (!Z_CONFIG::$CUSTOM_SETUP) {
+			if (!Zotero_ExternalUsers::allowDelete($userID)) {
+				throw new Exception("Zotero_ExternalUsers forbids deleting user '$username'");
+			}
 		}
 		
 		Zotero_DB::beginTransaction();
 		
 		if (Zotero_Groups::getUserOwnedGroups($userID)) {
 			throw new Exception("Cannot delete user '$username' with owned groups");
+		}
+
+		// Remove API keys
+		$keys = Zotero_Keys::getUserKeys($userID);
+		foreach ($keys as $keyObj) {
+			$keyObj->erase();
 		}
 		
 		// Remove user from any groups they're a member of
@@ -561,6 +562,8 @@ class Zotero_Users {
 	}
 	
 	
+	// DOCKERIZATION: prepare for dockerization
+	// move to ExternalUsers along with dependencies
 	private static function getUsernameFromWWW($userID) {
 		$sql = "SELECT username FROM users WHERE userID=?";
 		try {

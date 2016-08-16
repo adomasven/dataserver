@@ -772,6 +772,8 @@ class Zotero_Storage {
 		}
 	}
 	
+	// DOCKERIZATION: for dockerization
+	// Return 0 on custom deploys. Although we'll have to figure something out for quota in general
 	public static function getInstitutionalUserQuota($userID) {
 		// TODO: config
 		$dev = Z_ENV_TESTING_SITE ? "_test" : "";

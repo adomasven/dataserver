@@ -24,11 +24,6 @@
     ***** END LICENSE BLOCK *****
 */
 
-require_once('Zend/Db/Profiler.php');
-require_once('Zend/Db/Adapter/Mysqli.php');
-require_once('Zend/Db/Statement/Mysqli.php');
-require_once('Zend/Db/Statement/Mysqli/Exception.php');
-
 /**
 *
 * Singleton class for DB access
@@ -37,7 +32,7 @@ require_once('Zend/Db/Statement/Mysqli/Exception.php');
 class Zotero_DB {
 	public static $queryStats;
 	
-	protected static $instances;
+	protected static $instances = [];
 	
 	protected $connections = [];
 	protected $replicaConnections = [];
@@ -526,7 +521,7 @@ class Zotero_DB {
 		
 		// See if statement is already cached for this shard
 		if ($cache && isset($conn->statements[$key])) {
-			return $conn->statements[$key];
+//			return $conn->statements[$key];
 		}
 		
 		$stmt = new Zotero_DB_Statement($conn->link, $sql, $shardID);

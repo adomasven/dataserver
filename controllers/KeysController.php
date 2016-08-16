@@ -324,20 +324,11 @@ class KeysController extends ApiController {
 	
 	
 	private function authenticateKeyJSON($json) {
-		if (empty($json['username']) || empty($json['password'])) {
-			$this->e403();
-		}
-		
-		// Authenticate username/password
-		$userID = Zotero_Users::authenticate(
-			'password',
-			[
-				'username' => $json['username'],
-				'password' => $json['password']
-			]
-		);
+		// Authenticate pass on the JSON to be authenticated by the third-party 
+		// authentication plugin
+		$userID = Zotero_ExternalUsers::authenticate($json);
 		if (!$userID) {
-			$this->e403('Invalid username/password');
+			$this->e403('Invalid credentials');
 		}
 		return $userID;
 	}

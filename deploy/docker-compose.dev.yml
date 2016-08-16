@@ -1,0 +1,25 @@
+version: '2'
+services:
+  db-master:
+    ports:
+      - "3307:3306"
+      
+      
+  db-shard:
+    ports:
+      - "3308:3306"
+      
+  
+  memcached:
+    ports:
+      - "11211:11211"
+      
+
+  dataserver:
+    volumes:
+      - "../.:/var/www/"
+    ports:
+      - "8000:80"
+    environment:
+      XDEBUG_CONFIG: "remote_host=172.17.0.1"
+      PHP_IDE_CONFIG: "serverName=my.local"

@@ -1,4 +1,4 @@
-#!/usr/bin/php
+#!/usr/bin/env php
 <?
 set_include_path("../include");
 require("header.inc.php");
